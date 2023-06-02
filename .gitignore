@@ -4,4 +4,5 @@
 *.txt
 *.pyc
 /Literature
+/GR_tarea
 *.ipynb
