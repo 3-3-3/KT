@@ -2,3 +2,6 @@
 *.out
 *.csv
 *.txt
+*.pyc
+/Literature
+*.ipynb
