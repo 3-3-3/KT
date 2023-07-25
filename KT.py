@@ -1,3 +1,26 @@
+#AUTHORS: Liam Keeley (Colorado College)
+#A number of functions for use in creating KT diagrams and working with COSMIC data
+
+
+    #h_norm: calculate gravitational wave strain of a system a distance r from detector
+    #rh_norm: calculate absolute gravitational wave strain
+    #f_gw: calculate gravitational wave frequency
+    #r_RL: calculate Roche Lobe radius of system using Eddington approximation
+    #bound_A, bound_B, bound_C, bound_D, bound_E: polynomial approximations to boundaries given in KT
+    #mt_lim_from_M_q: determine point in KT diagram where mass transfer begins for systems where total mass is M and mass ratio is q
+    #mt_lim_from_m_a_q: determine point in KT diagram where mass transfer begins for systems where primary mass is m_a and mass ratio is q
+        #NOTE: these can also be used to reproduce boundaries in KT, and can take numpy arrays as ARGUMENTS
+        #For instance, boundary C is the locus of points where mass transfer begin for all systems where m_a=M_ch: so, we can pass m_a=M_ch and q=np.linspace(0,1,100)
+        #to reproduce boundary C
+    #plot_bin_trajectory: create plots of binary evolution in KT diagram from a COSMIC evolved binary system table
+    #KT_from_hdf5_dir: make a KT diagram (.jpg) for each file in a directory of fixed pops
+    #get_final_fix: using a bpp dataframe, get the final state of each system in bin_nums, including evol_type (not included in bcm)
+    #evol_graph: using a fixed population, create KT diagram tracking evolutionairy history of a random sample of systems, marking where there evol type changes
+    #plot_by_kstar: create a KT diagram from a dataframe which has f_gw and rh_norm columns, color coding by kstar1-kstar2
+    #plot_boundaries: plot the bound_A, bound_B, and bound_C on a KT diagram
+    #csv_from_fix_pops: concat the bcm dataframes for a number of fixed pops into one csv file
+        #NOTE: see function doc string for details on how directory containing fixed pops needs to be set up
+    #snr: calculate signal to noise ratio, assuming monochromatic (for now)
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -68,126 +91,6 @@ def r_RL(m_a,m_d,a):
     R_l = a*(0.49*q**2/3)/(0.6*q**(2/3)+np.log(1+q**(1/3)))
     return R_l
 
-def is_contact_binary(m_a,m_d,a):
-    '''
-    Determine if the binary system is a contact binary undergoing mass transfer.
-    a: orbital radius of binary system (in solar radii)
-    m_a: mass of accretor, in M_sun
-    m_d: mass of donor, in M_sun
-    '''
-    q = m_d / m_a
-
-    R_d = 0.0114*((m_d/1.44)**(-2/3)-(m_d/1.44)**(2/3))**(1/2)*(1+3.5*(m_d/0.00057)**(-2/3)+(m_d/0.00057)**(-1))**(-2/3) #solar radii
-    R_l = a*(0.49*q**2/3)/(0.6*q**(2/3)+np.log(1+q**(1/3)))
-
-    return R_d >= R_l
-
-def dwd_bin_type(kstar_1,kstar_2):
-    if kstar_1 < kstar_2:
-        klg = kstar_2
-        ksm = kstar_1
-    else:
-        klg = kstar_1
-        ksm = kstar_2
-
-    if ksm < 10 or klg > 14:
-        return 'Not a binary'
-
-    t = {10:'He',11:'Co',12:'O/Ne',13:'NS',14:'BH'}
-    #100 for He-He, 110 for He-Co, 120 for He-O/N
-    return f'{t[ksm]}-{t[klg]}'
-
-def df_bin_type(df):
-    return (df[df['WDbintype'] == 'He-He'], df[df['WDbintype'] == 'He-Co'], df[df['WDbintype'] == 'Co-Co'],
-                    df[df['WDbintype'] == 'He-O/Ne'], df[df['WDbintype'] == 'Co-O/Ne'], df[df['WDbintype'] == 'O/Ne-O/Ne'])
-
-
-def process_taumaline(f_name,nrows=None):
-    #columns to use
-    usecols = ['#bin_num','mass_1','mass_2','kstar_1','kstar_2','t_birth','sep_final','porb_final']
-    df = pd.read_csv(f_name,sep=',',usecols=usecols,nrows=nrows)
-
-    df.insert(2,'DWD_bin_type', \
-                [dwd_bin_type(df.at[i,'kstar_1'],df.at[i,'kstar_2']) for i in range(df.shape[0])])
-    df.drop(labels=['kstar_1','kstar_2'],axis=1,inplace=True)
-
-    df.insert(3,'Is_contact_binary',is_contact_binary(df['mass_1'], df['mass_2'],1/2*df['sep_final']))
-    #df.drop(labels=['sep_final'],axis=1,inplace=True)
-
-    #calculate gravitational wave frequency from planetary orbital period
-    df.insert(4, 'f_gw', f_gw(df['porb_final']))
-    #df.drop(labels=['porb_final'],axis=1,inplace=True) #we don't need planetary orbital period anymore
-    #calculate rh_norm
-    df.insert(5,'rh_norm',rh_norm(df['mass_1'], df['mass_2'], df['f_gw']))
-    #df.drop(labels=['mass_1','mass_2'], axis=1, inplace=True) #we do not need mass anymore
-
-
-    return df
-
-def dwd_type_cb_subplots(df,outfile=None):
-    '''
-    Take df and make subplots by binary system type and if the system is in mass transfer
-    '''
-    dwd_type = ['He-He','He-Co','Co-Co','He-O/Ne','Co-O/Ne']
-    is_cb = [False, True]
-    cb_label = ['Detached', 'Contact']
-
-    l_f_max = np.max(np.log10(np.array(np.array(df['f_gw']))))
-    l_rh_max = np.max(np.log10(np.array(np.array(df['rh_norm']))))
-    l_f_min = np.min(np.log10(np.array(np.array(df['f_gw']))))
-    l_rh_min = np.min(np.log10(np.array(np.array(df['rh_norm']))))
-
-    t_birth_max = df['t_birth'].max()
-    t_birth_min = df['t_birth'].min()
-
-    fig, axes = plt.subplots(len(dwd_type),len(is_cb),sharex=True,sharey=True,figsize=(8,6))
-    norm = mpl.colors.Normalize(vmin=t_birth_min,vmax=t_birth_max)
-    cmap = mpl.colormaps['cividis']
-
-    for i in range(len(dwd_type)):
-        for j in range(len(is_cb)):
-            df_ij = df[df['DWD_bin_type'] == dwd_type[i]][df['Is_contact_binary'] == is_cb[j]]
-            axes[i][j].set(xlim=(l_f_min,l_f_max),ylim=(l_rh_min,l_rh_max))
-            axes[i][j].scatter(np.log10(np.array(df_ij['f_gw'])),
-                                np.log10(np.array(df_ij['rh_norm'])),
-                                c=np.array(df_ij['t_birth']),
-                                norm=norm,
-                                cmap=cmap,
-                                label=f'{dwd_type[i]}',
-                                marker='.',lw=0,s=1,alpha=0.5)
-
-            if j == 0:
-                axes[i][j].set_ylabel(r'$\log_{10}{(rh_{norm})}$')
-            if j == (len(is_cb) - 1):
-                axes[i][j].yaxis.set_label_position('right')
-                axes[i][j].set_ylabel(f'{dwd_type[i]}')
-            #axes[i][j].legend()
-
-    axes[0][0].set_title('Detached Binary')
-    axes[0][1].set_title('Contact Binary')
-
-    axes[-1][0].set_xlabel(r'$\log_{10}{(f_{gw} (hz))}$')
-    axes[-1][1].set_xlabel(r'$\log_{10}{(f_{gw} (hz))}$')
-    fig.suptitle('Taumaline Galaxy Kt Plots')
-
-
-    fig.colorbar(mpl.cm.ScalarMappable(norm=norm,cmap=cmap),ax=axes)
-    if outfile:
-        plt.savefig(outfile)
-    plt.show()
-
-def m_1_m_2_from(K,q):
-    '''
-    Calculate mass of primary and secondary from mass parameter K and mass ratio q
-    as defined in KT. Note that 0<K<1 (for White Dwarfs) and 0<q<1
-    '''
-    m_1 = 1.44*K/(2**(1/5))*((1+q)/q**3)**(1/5) #M_ch*K/(2^1/5)*((1+q)/q^3)^1/5
-                                                #where M_ch is the Chandrasekar mass
-                                                #Note that m_1 is taken to be primary by COSMIC
-                                                #and is M_d in KT
-    m_2 = q*m_1 #Mass of secondary related by mass ratio to mass of primary
-    return (m_1,m_2)
-
 def bound_A(log10_f):
     return 0.731 + 2/3 * log10_f
 
@@ -250,8 +153,14 @@ def mt_lim_from_m_a_q(m_a,q):
 
     return (np.log10(f_gw),np.log10(rh_norm))
 
-def plot_bin_trajectory(bpp, bcm, fig, ax, system_label=None, marker='x', \
+def plot_bin_trajectory(fig, ax, bpp, bcm, system_label=None, marker='x', \
                             end_inspiral_label=None,cmap=None,norm=None,color=None):
+    '''
+    Plot the trajectories of an evolved table of binaries in a KT diagram
+    fig, ax: matplotlib figure and axis to plot on
+    bpp: dataframe which shows important changes in binary evolution (output of COSMIC Evolve.evolve)
+    bcm: dataframe which shows binary state at user specified points in time (output of COSMIC Evolve.evolve)
+    '''
     M_sun = ac.M_sun.value
     mass_1 = bcm['mass_1']
     mass_2 = bcm['mass_2']
@@ -316,8 +225,6 @@ def KT_from_hdf5_dir(d_name, out_dir='Graphs'):
         evol_types = df['evol_type'].unique()
         print(f'[*] Found evol_types: {evol_types}')
 
-
-
         for t in evol_types:
             df_t = df[df['evol_type'] == t]
             ax.scatter(np.log10(df_t['f_gw']), np.log10(df_t['rh_norm']), color=colors[int(t)],marker='.',
@@ -360,75 +267,6 @@ def KT_from_hdf5_dir(d_name, out_dir='Graphs'):
     fig_s.savefig(os.path.join(out_dir,'All_Systems.pdf'))
     plt.show()
 
-def evol_type_tphys(gal_pop, fix_pop, out_dir='Evol_Types'):
-    title = gal_pop.strip('/Tau/hdf5/gx_dat_.h5')
-    try:
-        os.mkdir(out_dir)
-    except FileExistsError:
-        pass
-
-    out_2 = os.path.join(out_dir,'final_type_2')
-    out_4 = os.path.join(out_dir,'final_type_4')
-    try:
-        os.mkdir(out_2)
-    except FileExistsError:
-        pass
-
-    try:
-        os.mkdir(out_4)
-    except FileExistsError:
-        pass
-
-
-    #first, we want to get unique bin nums in the galaxy population
-    print(f'reading in: {gal_pop}')
-    df = pd.read_hdf(gal_pop,key='LISA_population')
-    bn_2 = np.array(df[df['evol_type']==2]['bin_num'].unique()) #unique bin nums in df for evol type 2
-    bn_4 = np.array(df[df['evol_type']==4]['bin_num'].unique()) #and the same for evol type 4
-    del df #clear up this memory so it can be used when we load up the fix_pop
-
-    #Get the bpp dataframe from the fix_pop, which includes evolutionairy history
-    print(f'reading in: {fix_pop}')
-    bpp = pd.read_hdf(fix_pop,key='bpp')
-    bpp_2 = bpp[bpp['bin_num'].isin(bn_2)] #filter for stars with evol_type 2 in galaxy population
-    bpp_4 = bpp[bpp['bin_num'].isin(bn_4)] #and same for evol_type 4 in galaxy population
-
-
-    colors = ['white','red','green','hotpink','crimson','violet','darkorange','yellow','lightsteelblue','black', \
-                        'silver', 'magenta','limegreen','cyan','blue','navy','deeppink'] #colors for each possible evol type
-                                                                                            #(white place holder so access by evol type)
-    #create plot for bpp_2
-    evol_types = bpp_2['evol_type'].unique()
-    fig_2, ax_2 = plt.subplots()
-
-    for t in evol_types:
-        ax_2.scatter(bpp_2[bpp_2['evol_type']==t]['tphys'], \
-                     np.log10(bpp_2[bpp_2['evol_type']==t]['kstar_1']*bpp_2[bpp_2['evol_type']==t]['kstar_2']), \
-                        color=colors[int(t)],marker='o',alpha=0.2,label=f'evol_type:{t}')
-
-    ax_2.set_xlabel(r'Evolution Time (Myr)')
-    ax_2.set_ylabel(r'$\log{kstar_1*kstar_2}$')
-    ax_2.set_title(title)
-    ax_2.legend()
-    ax_2.grid()
-    fig_2.savefig(os.path.join(out_2,title + '.jpg'))
-
-    #create plot for bpp_4
-    evol_types = bpp_4['evol_type'].unique()
-    fig_4, ax_4 = plt.subplots()
-
-    for t in evol_types:
-        ax_4.scatter(bpp_4[bpp_4['evol_type']==t]['tphys'], \
-                     np.log10(bpp_4[bpp_4['evol_type']==t]['kstar_1']*bpp_4[bpp_4['evol_type']==t]['kstar_2']), \
-                        color=colors[int(t)],marker='o',alpha=0.2,label=f'evol_type:{t}')
-
-    ax_4.set_xlabel(r'Evolution Time (Myr)')
-    ax_4.set_ylabel(r'$\log{kstar_1*kstar_2}$')
-
-    ax_4.set_title(title)
-    ax_4.grid()
-    ax_4.legend()
-    fig_4.savefig(os.path.join(out_4,title + '.jpg'))
 
 
 def get_final_fix(bin_nums,bpp):
@@ -630,4 +468,4 @@ def snr(df, nc_file):
     snr = np.empty(m_chirp.size)
     snr = h_norm * np.sqrt(t_obs) / np.interp(np.array(df.f_gw),f,noise) #np.interp interpolates the noisecurve at f_gw
 
-    return snr 
+    return snr
