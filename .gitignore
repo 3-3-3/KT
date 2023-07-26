@@ -5,4 +5,4 @@
 *.pyc
 /Literature
 /GR_tarea
-*.ipynb
+*.h5
