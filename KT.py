@@ -459,7 +459,7 @@ def plot_by_kstar(fig,ax,df):
 
     Returns: fig, ax
     '''
-    colors = ['tab:green','tab:red','tab:cyan','tab:purple','tab:pink','tab:orange']
+    colors = ['tab:green','tab:red','tab:cyan','tab:purple','tab:pink','tab:orange','black']
     ax.scatter(
         np.log10(df[(df['kstar_1']==10) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==10) & (df['kstar_2']==10)]['rh_norm']),
@@ -484,6 +484,53 @@ def plot_by_kstar(fig,ax,df):
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['f_gw']),
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['rh_norm']),
         marker='.',color=colors[5],lw=1,s=1)
+    ax.scatter(
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['f_gw']),
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['rh_norm']),
+        marker='.',color=colors[6],lw=1,s=1)
+    ax.scatter(
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['f_gw']),
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['rh_norm']),
+        marker='.',color=colors[6],lw=1,s=1)
+
+
+    legend_elements = [Line2D([0],[0],color=colors[0],label=f'He-He',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[1],label=f'C-He',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[2],label=f'C-C',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[3],label=f'O/Ne-He',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[4],label=f'O/Ne-C',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[5],label=f'O/Ne-O/Ne',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[6],label=f'NS',marker='o',lw=0)]
+
+    ax.legend(handles=legend_elements,loc='lower right')
+
+    return fig, ax
+
+def plot_by_evol_type(fig,ax,df):
+    '''
+    Create a KT diagram from a df with f_gw and rh_norm columns color coded by kstar-kstar.
+
+    fig: mpl figure
+    ax: mpl ax
+    (e.g. from fig, ax = plt.subplots())
+    df: dataframe with kstar1, kstar2, f_gw, rh_norm columns
+
+    Returns: fig, ax
+    '''
+    colors = ['tab:green','tab:red','tab:cyan','tab:purple','tab:pink','tab:orange']
+    ax.scatter(
+        np.log10(df[(df['evol_type']==2)]['f_gw']),
+        np.log10(df[(df['evol_type']==2)]['rh_norm']),
+        marker='.',color=colors[0],lw=1,s=1)
+    ax.scatter(
+        np.log10(df[(df['evol_type']==3)]['f_gw']),
+        np.log10(df[(df['evol_type']==3)]['rh_norm']),
+        marker='.',color=colors[1],lw=1,s=1)
+    ax.scatter(
+        np.log10(df[(df['evol_type']==4)]['f_gw']),
+        np.log10(df[(df['kstar_1']==4)]['rh_norm']),
+        marker='.',color=colors[2],lw=1,s=1)
+
 
 
     legend_elements = [Line2D([0],[0],color=colors[0],label=f'He-He',marker='o',lw=0),
