@@ -6,3 +6,4 @@
 /Literature
 /GR_tarea
 *.h5
+*.ipynb_checkpoints/
