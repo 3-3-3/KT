@@ -1,7 +1,7 @@
 #AUTHORS: Liam Keeley (Colorado College)
 #A number of functions for use in creating KT diagrams and working with COSMIC data
 
-
+#FUNCTION LIST
     #h_norm: calculate gravitational wave strain of a system a distance r from detector
     #rh_norm: calculate absolute gravitational wave strain
     #f_gw: calculate gravitational wave frequency
@@ -15,12 +15,14 @@
     #plot_bin_trajectory: create plots of binary evolution in KT diagram from a COSMIC evolved binary system table
     #KT_from_hdf5_dir: make a KT diagram (.jpg) for each file in a directory of fixed pops
     #get_final_fix: using a bpp dataframe, get the final state of each system in bin_nums, including evol_type (not included in bcm)
-    #evol_graph: using a fixed population, create KT diagram tracking evolutionairy history of a random sample of systems, marking where there evol type changes
+    #evol_graph: using a fixed population, create KT diagram tracking evolutionairy history of a random sample of systems, marking where there evol type changes (this function sucks and probably
+        #needs to be rewritten–way to specific to local file directory tree)
     #plot_by_kstar: create a KT diagram from a dataframe which has f_gw and rh_norm columns, color coding by kstar1-kstar2
     #plot_boundaries: plot the bound_A, bound_B, and bound_C on a KT diagram
     #csv_from_fix_pops: concat the bcm dataframes for a number of fixed pops into one csv file
         #NOTE: see function doc string for details on how directory containing fixed pops needs to be set up
     #snr: calculate signal to noise ratio, assuming monochromatic (for now)
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -33,10 +35,13 @@ import os
 def h_norm(m_a, m_d, f, r):
     '''
     Compute h_norm for a given binary system. This computation assumes that the binary system is detached.
+
     m_a: mass of accretor, in M_sun
     m_d: mass of donor, in M_sun
     f: orbital frequency
     r: distance to system
+
+    Returns: gravitational wave strain measured at detector
     '''
     M_tot = m_a + m_d
     q = m_d / m_a
@@ -49,11 +54,13 @@ def h_norm(m_a, m_d, f, r):
 
 def rh_norm(m_a_in, m_d_in, f, to_kg=True):
     '''
-    Compute rh_norm for a given binary system, the normalized gravitational strain of the system.
-    This computation assumes that the binary system can be treated as two point masses.
+    Compute rh_norm for a given binary system, the normalized gravitational strain of the system. This computation assumes that the binary system can be treated as two point masses.
+
     m_a: mass of accretor, in M_sun
     m_d: mass of donor, in M_sun
     f: orbital frequency
+
+    Returns: the absolute gravitational wave strain (detected gravitational wave strain times distance to source)
     '''
     if to_kg:
         m_a = m_a_in*ac.M_sun.value
@@ -68,13 +75,17 @@ def rh_norm(m_a_in, m_d_in, f, to_kg=True):
     M_ch = (m_a*m_d)**(3/5)/(m_a+m_d)**(1/5)
 
     J_orb = (pc.G ** 2 * M_tot ** 5 / (np.pi * f)) ** (1 / 3) * Q
-    h_norm = 4*pc.G**3/(pc.c**4)*M_ch**5/J_orb**2
-    return h_norm
+    rh_norm = 4*pc.G**3/(pc.c**4)*M_ch**5/J_orb**2
+    return rh_norm
 
 def f_gw(P_orb, to_sec=True):
     '''
-    Gravitational wave frequency from the orbital period. If to_sec, input is in days
-    and output is hz. Otherwise, a conversion needs to be made after the function is run.
+    Gravitational wave frequency from the orbital period. If to_sec, input is in days and output is hz. Otherwise, a conversion needs to be made after the function is run.
+
+    P_orb: orbital period
+    to_sec: whether to convert orbital period from days (which is how the parameter in COSMIC is measured) to seconds
+
+    Returns: gravitational wave frequency of system, measured in s^-1 if to_sec=True and days^-1 otherwise (or something else if P_orb is not measured in days–to_sec should not be used in this case)
     '''
     if to_sec:
         f_orb = 1/(P_orb*60*60*24)
@@ -86,30 +97,77 @@ def f_gw(P_orb, to_sec=True):
 def r_RL(m_a,m_d,a):
     '''
     Computes the Roche Lobe radius from the component masses and sep
+
+    m_a: accretor mass
+    m_d: donor mass
+    a: orbital seperation
+
+    Returns: Roche lobe radius of system
     '''
     q = m_d / m_a
     R_l = a*(0.49*q**2/3)/(0.6*q**(2/3)+np.log(1+q**(1/3)))
     return R_l
 
 def bound_A(log10_f):
+    '''
+    Polynomial expansion of Boundary A given in KT
+
+    log10_f: x-axis for KT diagram
+
+    Returns: log10(rh_norm) at each point in log10_f for boundary A
+    '''
     return 0.731 + 2/3 * log10_f
 
 def bound_B(log10_f):
+    '''
+    Polynomial expansion of Boundary B given in KT
+
+    log10_f: x-axis for KT diagram
+
+    Returns: log10(rh_norm) at each point in log10_f for boundary B
+    '''
     return 0.703 + 0.637*log10_f - 0.017*log10_f**2 + 0.298*log10_f**3 + 0.061*log10_f**4
 
 def bound_C(log10_f):
+    '''
+    Polynomial expansion of Boundary C given in KT
+
+    log10_f: x-axis for KT diagram
+
+    Returns: log10(rh_norm) at each point in log10_f for boundary C
+    '''
     return 0.761 + 1.005*log10_f + 0.700*log10_f**2 +0.700*log10_f**3 + 0.214*log10_f**4 + 0.023*log10_f**5
 
 def bound_D(log10_f):
+    '''
+    Polynomial expansion of Boundary D given in KT
+
+    log10_f: x-axis for KT diagram
+
+    Returns: log10(rh_norm) at each point in log10_f for boundary D
+    '''
     return 2.141+1.686*log10_f - 0.141*log10_f**2 + 0.007*log10_f**3
 
 def bound_E(log10_f):
+    '''
+    Polynomial expansion of Boundary E given in KT
+
+    log10_f: x-axis for KT diagram, log(f_gw)
+
+    Returns: log(rh_norm) at each point in log(f_gw) for boundary E
+    '''
     return -1.381 - 2.108*log10_f - 1.394*log10_f**2 - 0.167*log10_f**3
 
 def mt_lim_from_M_q(M,q):
     '''
-    Determine mass transfer limit for system with total mass M=m_a+m_d and mass ratio q=m_d/m_a
-    For q=2/3 and all M, essentially equal to bound_D
+    Determine mass transfer limit for system with total mass M=m_a+m_d and mass ratio q=m_d/m_a. For q=2/3 and all M, essentially equal to bound_D
+
+    M: total mass of system (can be passed as either a fixed number or numpy array, depending on application)
+    q: mass ratio (likewise can be passed as either a fixed number or numpy array)
+
+    NOTE: M and q should not BOTH be numpy arrays
+
+    Returns: Tuple containing one or more points in log(f_gw)-log(rh_norm) space, defining where the systems given by M and q begin Roche Lobe Overflow
     '''
     m_d = M/(1+1/q)
     m_a = m_d/q
@@ -132,7 +190,14 @@ def mt_lim_from_M_q(M,q):
 
 def mt_lim_from_m_a_q(m_a,q):
     '''
-    Determine mass transfer limit for system with m_a=M_ch and mass ratio q=m_d/m_a
+    Determine mass transfer limit for system with total mass M=m_a+m_d and mass ratio q=m_d/m_a. For q=2/3 and all M, essentially equal to bound_D
+
+    m_a: accretor mass of system (can be passed as either a fixed number or numpy array, depending on application)
+    q: mass ratio (likewise can be passed as either a fixed number or numpy array)
+
+    NOTE: m_a and q should not BOTH be numpy arrays
+
+    Returns: Tuple containing one or more points in log(f_gw)-log(rh_norm) space, defining where the systems given by m_a and q begin Roche Lobe Overflow
     '''
     m_d = q*m_a
     M = m_a + m_d
@@ -157,9 +222,12 @@ def plot_bin_trajectory(fig, ax, bpp, bcm, system_label=None, marker='x', \
                             end_inspiral_label=None,cmap=None,norm=None,color=None):
     '''
     Plot the trajectories of an evolved table of binaries in a KT diagram
+
     fig, ax: matplotlib figure and axis to plot on
     bpp: dataframe which shows important changes in binary evolution (output of COSMIC Evolve.evolve)
     bcm: dataframe which shows binary state at user specified points in time (output of COSMIC Evolve.evolve)
+
+    Returns: (fig, ax)
     '''
     M_sun = ac.M_sun.value
     mass_1 = bcm['mass_1']
@@ -190,6 +258,11 @@ def plot_bin_trajectory(fig, ax, bpp, bcm, system_label=None, marker='x', \
 def KT_from_hdf5_dir(d_name, out_dir='Graphs'):
     '''
     Create a KT diagram for each h5 file in a directory of h5 files
+
+    d_name: directory with h5 fix pops in it.
+    out_dir: directory to save plots in.
+
+    Returns: nothing
     '''
     try:
         os.mkdir(out_dir)
@@ -271,11 +344,12 @@ def KT_from_hdf5_dir(d_name, out_dir='Graphs'):
 
 def get_final_fix(bin_nums,bpp):
     '''
-    Create a dataframe from a bpp dataframe which includes the final state for each star, as well as the evol_type it was in
-    when the simulation ended.
+    Create a dataframe from a bpp dataframe which includes the final state for each star, as well as the evol_type it was in when the simulation ended.
 
     bin_nums: list of bin_nums to include in the output array
     bpp: bpp dataframe
+
+    Returns: dataframe with all the final states of the systems given by bin_nums (pass bin_nums=bpp.bin_num.unique() for all systems)
     '''
     fix_list = [pd.DataFrame(columns=bpp.columns)]
 
@@ -291,21 +365,34 @@ def get_final_fix(bin_nums,bpp):
 
 def evol_graph(kstar1, kstar2, final_evol_type, fix_pop, nstars, seed, fig=None, ax=None, out_dir=None):
     '''
-    Create a KT diagram tracking the evolution of a sample of stars as they move throught their stellar evolution
+    Create a KT diagram tracking the evolution of a sample of stars as they move throught their stellar evolution. This function should probably be made more general.
+    Right now set up to work on the Taumaline fixed population file structure only. On the main directory, the following files are saved:
 
+            fixed_fix_pop_bulge.csv, fixed_fix_pop_bulge.csv, fixed_fix_pop_thickDisk.csv
+
+    which are sampled to get some random bin_nums. Then, these are looked up in the fixed populations saved in tau_hdf5, with subdirectory fixed_pop, contating sub directories for each galaxy component. So, not ideal: if I ever come back and use this function I know I'll just end up rewriting it lol.
+
+    kstar1: kstar1 for the systems to create evol graph for
+    kstar2: kstar2 for systems to create evol graph for
+    final_evol_type: final evol_type to create graph for
+    fix_pop: the fixed pop: 'bulge', 'thinDisk', 'thickDisk'
+    nstars: number of systems to sample
+
+    Returns: bpp df, fig, ax
     '''
     evol_colors = {1.0 : 'lightgrey', 2.0 : 'purple', 3.0 : 'cyan', 4.0 : 'deeppink', 5.0 : 'lightgreen',
                6.0 : 'darkorange', 7.0 : 'lime', 8.0 : 'blue', 9.0 : 'black', 10.0 : '#0f0f0f0f', 11.0 : 'red',
                12.0 : 'mediumaquamarine', 13.0 : 'aquamarine', 14.0 : 'navy', 15.0 : 'magenta', 16.0 : 'crimson'}
 
     fp = {'bulge' : 'fixed_fix_pop_bulge.csv',
-          'thinDisk' : 'fixed_fix_pop_thinDisk.csv',
+          'thinDisk' : 'fixed_fix_pop_bulge.csv',
           'thickDisk' : 'fixed_fix_pop_thickDisk.csv'}
     b_name = ''
     if kstar1 == 12:
         b_name = 'dat_kstar1_12_kstar2_10_12.h5'
     else:
         b_name = f'dat_kstar1_{int(kstar1)}_kstar2_{int(kstar2)}.h5'
+
     #First, look in fixed pop to get some stars
     fix = pd.read_csv(fp[fix_pop])
     fix = fix.query(f'kstar_1 == {kstar1} & kstar_2 == {kstar2} & evol_type == {final_evol_type}')
@@ -363,8 +450,14 @@ def evol_graph(kstar1, kstar2, final_evol_type, fix_pop, nstars, seed, fig=None,
 
 def plot_by_kstar(fig,ax,df):
     '''
-    Create a KT diagram from a df with f_gw and rh_norm columns
-    color code by kstar-kstar
+    Create a KT diagram from a df with f_gw and rh_norm columns color coded by kstar-kstar.
+
+    fig: mpl figure
+    ax: mpl ax
+    (e.g. from fig, ax = plt.subplots())
+    df: dataframe with kstar1, kstar2, f_gw, rh_norm columns
+
+    Returns: fig, ax
     '''
     colors = ['tab:green','tab:red','tab:cyan','tab:purple','tab:pink','tab:orange']
     ax.scatter(
@@ -408,6 +501,11 @@ def plot_by_kstar(fig,ax,df):
 def plot_boundaries(fig,ax):
     '''
     Plot KT boundaries
+
+    fig: figure
+    ax: matplotlib axis
+
+    Returns: fig, ax
     '''
     M = np.linspace(0,2.88,100)
     q = np.linspace(0,1,100)
@@ -421,11 +519,14 @@ def plot_boundaries(fig,ax):
 
     return fig, ax
 
-def csv_from_fix_pops(base_dir,out_name='agate_csv.csv'):
+def csv_from_fix_pops(base_dir,out_name='agate.csv'):
     '''
-    Take as input a directory which contains sub directories 'Bulge', 'thickDisk', and 'thinDisk'
-    which each contain one or more fixed pop .h5 files. Take the bcm df from each of these files,
-    concat them all together, and save them to a csv!
+    Take as input a directory which contains sub directories 'Bulge', 'thickDisk', and 'thinDisk' which each contain one or more fixed pop .h5 files. Take the bcm df from each of these files, concat them all together, and save them to a csv!
+
+    base_dir: directory in which the fixed subdirectories 'Bulge', 'thickDisk, and thinDisk' are stored
+    out_name: name of file to save to.
+
+    Returns: nothing
     '''
     sub_dirs = ['Bulge','thickDisk','thinDisk']
     df_list = []
@@ -435,7 +536,7 @@ def csv_from_fix_pops(base_dir,out_name='agate_csv.csv'):
         for file in os.listdir(d):
             if file[-3:] == '.h5':
                 #Add the 'bcm' file, which will contain the final state of all the stars
-                #(We lose evol_type this way, but the alternative–using get_final_fix–would take very long)
+                #(We lose evol_type this way, but the alternative–using get_final_fix–takes much longer!)
                 df_list.append(pd.read_hdf(os.path.join(d,file),'bcm'))
 
     out_df = pd.concat(df_list)
@@ -444,28 +545,57 @@ def csv_from_fix_pops(base_dir,out_name='agate_csv.csv'):
     out_df.to_csv(out_name)
     return
 
-def snr(df, nc_file):
+def final_csv_from_fix_pops(base_dir, out_name='final_agate.csv'):
     '''
-    Calculate the LISA signal to noise ratio for all systems in the given df
-    from a LISA noise curve file
+    Similar to csv_from fix_pops, except uses the get_final_fix function instead of the bcm df for the fixed populations. This will take longer to run, but include information about the final evol_type.
+
+    base_dir: directory in which the fixed subdirectories 'Bulge', 'thickDisk, and thinDisk' are stored
+    out_name: name of file to save to.
+
+    Returns: nothing
+    '''
+    sub_dirs = ['Bulge','thickDisk','thinDisk']
+    df_list = []
+
+    for dir in sub_dirs:
+        d = os.path.join(base_dir,dir)
+        for file in os.listdir(d):
+            if file[-3:] == '.h5':
+                #Add the 'bcm' file, which will contain the final state of all the stars
+                #(We lose evol_type this way, but the alternative–using get_final_fix–takes much longer!)
+                df_list.append(pd.read_hdf(os.path.join(d,file),'bcm'))
+
+    out_df = pd.concat(df_list)
+    out_df['f_gw'] = f_gw(out_df['porb'])
+    out_df['rh_norm'] = rh_norm(out_df['mass_1'],out_df['mass_2'],out_df['f_gw'])
+    out_df.to_csv(out_name)
+    return
+
+
+def snr(df, nc_file, t_observation=1):
+    '''
+    Calculate the LISA signal to noise ratio for all systems in the given df from a LISA noise curve file, assuming they are all monochrome.
+    The monochrome assumption is because we need to think more closely about how to treat mass transfer chirping sources, which will need to be treated differently then inspiral chirping systems.
+
     df: dataframe to calculate the signal to noise ratio for.
     nc_file: path to noise curve file
+    t_observation: LISA observation time in years
 
-    Returns: numpy array with signal to noise ratios for each system in df.
+    Returns: numpy array with signal to noise ratios for each system in df, as well as an array detailing whether the system should be chirping, and needs to be treated in more detail.
     '''
-    dat = np.loadtxt(os.path.join('Agate','LISA2018_esaSTD.csv'),delimiter=',')
-    f = dat[:,0]
-    noise = dat[:,1]
+    #load in Lisa noisecurve.
+    dat = np.loadtxt(nc_file,delimiter=',')
+    f = dat[:,0] #frequency points in noisecurve (hz)
+    noise = dat[:,1] #h_norm points (SI–momentum^2 if I remember correctly)
 
     m_chirp = (np.array(df.mass_1)*np.array(df.mass_2))**(3/5)/(np.array(df.mass_1)+np.array(df.mass_2))**(1/5)
     kappa = (5 / (256 * np.pi ** (8/3)) / (pc.G/pc.c**3)**(5/3)) * (1 / ((m_chirp * ac.M_sun.value) ** (5/3)))
-    t_obs = 1 * (60*60*24*365.25) #Observation time in years
+    t_obs = t_observation * (60*60*24*365.25) #Observation time in years
     stat_freq = (8/3*(kappa/t_obs**2)**(3/11)) #Cutoff frequency to be considered a stationairy source
 
-    is_monochrome = [df.f_gw < stat_freq]
+    is_monochrome = df.f_gw < stat_freq
     h_norm = df['rh_norm'] / (8*ac.kpc.value) #h_norm if source were at a distance of 8 parsecs from detector
 
-    snr = np.empty(m_chirp.size)
     snr = h_norm * np.sqrt(t_obs) / np.interp(np.array(df.f_gw),f,noise) #np.interp interpolates the noisecurve at f_gw
 
-    return snr
+    return snr, is_monochrome
