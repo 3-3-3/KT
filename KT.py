@@ -31,6 +31,7 @@ import numpy as np
 import scipy.constants as pc
 import astropy.constants as ac
 import os
+import time
 
 def h_norm(m_a, m_d, f, r):
     '''
@@ -301,9 +302,9 @@ def KT_from_hdf5_dir(d_name, out_dir='Graphs'):
         for t in evol_types:
             df_t = df[df['evol_type'] == t]
             ax.scatter(np.log10(df_t['f_gw']), np.log10(df_t['rh_norm']), color=colors[int(t)],marker='.',
-                       lw=0.1,s=1)
+                       lw=0.1,s=s)
             ax_s.scatter(np.log10(df_t['f_gw']), np.log10(df_t['rh_norm']), color=colors[int(t)],marker='.',
-                       lw=0.5,s=1)
+                       lw=0.5,s=s)
             legend_elements.append(Line2D([0], [0], color=colors[int(t)], marker='o', \
                                             label=f'Evol type: {t}', markersize=10))
 
@@ -448,7 +449,7 @@ def evol_graph(kstar1, kstar2, final_evol_type, fix_pop, nstars, seed, fig=None,
 
     return bpp, fig, ax
 
-def plot_by_kstar(fig,ax,df):
+def plot_by_kstar(fig,ax,df,lw=1,s=1):
     '''
     Create a KT diagram from a df with f_gw and rh_norm columns color coded by kstar-kstar.
 
@@ -463,35 +464,35 @@ def plot_by_kstar(fig,ax,df):
     ax.scatter(
         np.log10(df[(df['kstar_1']==10) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==10) & (df['kstar_2']==10)]['rh_norm']),
-        marker='.',color=colors[0],lw=1,s=1)
+        marker='.',color=colors[0],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==10)]['rh_norm']),
-        marker='.',color=colors[1],lw=1,s=1)
+        marker='.',color=colors[1],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==11)]['f_gw']),
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==11)]['rh_norm']),
-        marker='.',color=colors[2],lw=1,s=1)
+        marker='.',color=colors[2],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==10)]['rh_norm']),
-        marker='.',color=colors[3],lw=1,s=1)
+        marker='.',color=colors[3],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==11)]['f_gw']),
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==11)]['rh_norm']),
-        marker='.',color=colors[4],lw=1,s=1)
+        marker='.',color=colors[4],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['f_gw']),
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['rh_norm']),
-        marker='.',color=colors[5],lw=1,s=1)
+        marker='.',color=colors[5],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['rh_norm']),
-        marker='.',color=colors[6],lw=1,s=1)
+        marker='.',color=colors[6],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['f_gw']),
         np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['rh_norm']),
-        marker='.',color=colors[6],lw=1,s=1)
+        marker='.',color=colors[6],lw=lw,s=s)
 
 
     legend_elements = [Line2D([0],[0],color=colors[0],label=f'He-He',marker='o',lw=0),
@@ -506,7 +507,7 @@ def plot_by_kstar(fig,ax,df):
 
     return fig, ax
 
-def plot_by_evol_type(fig,ax,df):
+def plot_by_evol_type(fig,ax,df,lw=1,s=1):
     '''
     Create a KT diagram from a df with f_gw and rh_norm columns color coded by kstar-kstar.
 
@@ -517,28 +518,25 @@ def plot_by_evol_type(fig,ax,df):
 
     Returns: fig, ax
     '''
-    colors = ['tab:green','tab:red','tab:cyan','tab:purple','tab:pink','tab:orange']
+    colors = ['purple','cyan','pink']
     ax.scatter(
         np.log10(df[(df['evol_type']==2)]['f_gw']),
         np.log10(df[(df['evol_type']==2)]['rh_norm']),
-        marker='.',color=colors[0],lw=1,s=1)
+        marker='.',color=colors[0],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['evol_type']==3)]['f_gw']),
         np.log10(df[(df['evol_type']==3)]['rh_norm']),
-        marker='.',color=colors[1],lw=1,s=1)
+        marker='.',color=colors[1],lw=lw,s=s)
     ax.scatter(
         np.log10(df[(df['evol_type']==4)]['f_gw']),
-        np.log10(df[(df['kstar_1']==4)]['rh_norm']),
-        marker='.',color=colors[2],lw=1,s=1)
+        np.log10(df[(df['evol_type']==4)]['rh_norm']),
+        marker='.',color=colors[2],lw=lw,s=s)
 
 
 
-    legend_elements = [Line2D([0],[0],color=colors[0],label=f'He-He',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[1],label=f'C-He',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[2],label=f'C-C',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[3],label=f'O/Ne-He',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[4],label=f'O/Ne-C',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[5],label=f'O/Ne-O/Ne',marker='o',lw=0)]
+    legend_elements = [Line2D([0],[0],color=colors[0],label=f'Change kstar',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[1],label=f'Mass transferring',marker='o',lw=0),
+                       Line2D([0],[0],color=colors[2],label=f'End RLOF',marker='o',lw=0)]
 
     ax.legend(handles=legend_elements,loc='lower right')
 
@@ -592,12 +590,13 @@ def csv_from_fix_pops(base_dir,out_name='agate.csv'):
     out_df.to_csv(out_name)
     return
 
-def final_csv_from_fix_pops(base_dir, out_name='final_agate.csv'):
+def final_csv_from_fix_pops(base_dir, out_name='final_agate.csv',verbose=False):
     '''
     Similar to csv_from fix_pops, except uses the get_final_fix function instead of the bcm df for the fixed populations. This will take longer to run, but include information about the final evol_type.
 
     base_dir: directory in which the fixed subdirectories 'Bulge', 'thickDisk, and thinDisk' are stored
     out_name: name of file to save to.
+    verbose: print stuff out as it goes
 
     Returns: nothing
     '''
@@ -610,7 +609,19 @@ def final_csv_from_fix_pops(base_dir, out_name='final_agate.csv'):
             if file[-3:] == '.h5':
                 #Add the 'bcm' file, which will contain the final state of all the stars
                 #(We lose evol_type this way, but the alternative–using get_final_fix–takes much longer!)
-                df_list.append(pd.read_hdf(os.path.join(d,file),'bcm'))
+                if verbose:
+                    print(f'[*] found h5 file: {os.path.join(d,file)}')
+
+                df = pd.read_hdf(os.path.join(d,file), 'bpp')
+
+                if verbose:
+                    t = time.time()
+                    bin_nums = df.bin_num.unique()
+                    df_list.append(get_final_fix(bin_nums,df))
+                    print(f'[*] Took {time.time()-t} to run get_final_fix')
+                else:
+                    bin_nums = df.bin_num.unique()
+                    df_list.append(get_final_fix(bin_nums,df))
 
     out_df = pd.concat(df_list)
     out_df['f_gw'] = f_gw(out_df['porb'])
@@ -637,7 +648,7 @@ def snr(df, nc_file, t_observation=1):
 
     m_chirp = (np.array(df.mass_1)*np.array(df.mass_2))**(3/5)/(np.array(df.mass_1)+np.array(df.mass_2))**(1/5)
     kappa = (5 / (256 * np.pi ** (8/3)) / (pc.G/pc.c**3)**(5/3)) * (1 / ((m_chirp * ac.M_sun.value) ** (5/3)))
-    t_obs = t_observation * (60*60*24*365.25) #Observation time in years
+    t_obs = t_observation * (60*60*24*365.25) #Observation time in seconds
     stat_freq = (8/3*(kappa/t_obs**2)**(3/11)) #Cutoff frequency to be considered a stationairy source
 
     is_monochrome = df.f_gw < stat_freq
@@ -646,3 +657,17 @@ def snr(df, nc_file, t_observation=1):
     snr = h_norm * np.sqrt(t_obs) / np.interp(np.array(df.f_gw),f,noise) #np.interp interpolates the noisecurve at f_gw
 
     return snr, is_monochrome
+
+def snr_bound(fig, ax, log10_f, nc_file, t_observation=1, snr_cutoff=1,ls='dotted',color='black'):
+
+
+    #load in Lisa noisecurve.
+    dat = np.loadtxt(nc_file,delimiter=',')
+    f_in = 10**log10_f
+    f = dat[:,0] #frequency points in noisecurve (hz)
+    noise = dat[:,1] #h_norm points (SI–momentum^2 if I remember correctly)
+    noise = 8 * ac.kpc.value * noise #scale the noise so it relates to the absolute strain at 8 kpc
+    t_obs = t_observation * (60*60*24*365.25) #Observation time in seconds
+    rh_norm = snr_cutoff*(np.interp(f_in,f,noise)/np.sqrt(t_obs))
+    ax.plot(log10_f,np.log10(rh_norm),ls=ls,color=color)
+    return fig, ax
