@@ -22,6 +22,7 @@
     #csv_from_fix_pops: concat the bcm dataframes for a number of fixed pops into one csv file
         #NOTE: see function doc string for details on how directory containing fixed pops needs to be set up
     #snr: calculate signal to noise ratio, assuming monochromatic (for now)
+    #snr_bound: signal to noise cutoff in KT plot
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -501,7 +502,7 @@ def plot_by_kstar(fig,ax,df,lw=1,s=1):
                        Line2D([0],[0],color=colors[3],label=f'O/Ne-He',marker='o',lw=0),
                        Line2D([0],[0],color=colors[4],label=f'O/Ne-C',marker='o',lw=0),
                        Line2D([0],[0],color=colors[5],label=f'O/Ne-O/Ne',marker='o',lw=0),
-                       Line2D([0],[0],color=colors[6],label=f'NS',marker='o',lw=0)]
+                       Line2D([0],[0],color=colors[6],label=f'NS-WD',marker='o',lw=0)]
 
     ax.legend(handles=legend_elements,loc='lower right')
 
