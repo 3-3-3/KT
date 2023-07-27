@@ -234,9 +234,11 @@ if __name__ == '__main__':
     print('Running main loop')
     t = time.time()
 
+    iteration = 0
+
     while total_mass_stars < args.total_mass:
         # Set random seed such that each iteration gets a unique, determinable seed
-        rand_seed = seed_int + Nstep
+        rand_seed = seed_int + Nstep + iteration
         np.random.seed(rand_seed)
 
         # Select the initial binary sample method from user input
@@ -390,7 +392,7 @@ if __name__ == '__main__':
         print(f'[*] {round(total_mass_stars,2)} mass sampled of {round(args.total_mass,2)} in {round(ellapsed_time,2)}. Estimated remaining time: {round(estimated_time_remaining,2)}')
         log_file.write(f'[*] {round(total_mass_stars,2)} mass sampled of {round(args.total_mass,2)} in {round(ellapsed_time,2)}. Estimated remaining time: {round(estimated_time_remaining,2)}')
 
-        Nstep += 1
+        iteration += 1
 
     # Close the data storage file
     dat_store.close()
