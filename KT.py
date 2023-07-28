@@ -467,6 +467,14 @@ def plot_by_kstar(fig,ax,df,lw=1,s=1):
         np.log10(df[(df['kstar_1']==10) & (df['kstar_2']==10)]['rh_norm']),
         marker='.',color=colors[0],lw=lw,s=s)
     ax.scatter(
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['f_gw']),
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['rh_norm']),
+        marker='.',color=colors[6],lw=lw,s=s)
+    ax.scatter(
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['f_gw']),
+        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['rh_norm']),
+        marker='.',color=colors[6],lw=lw,s=s)
+    ax.scatter(
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==10)]['f_gw']),
         np.log10(df[(df['kstar_1']==11) & (df['kstar_2']==10)]['rh_norm']),
         marker='.',color=colors[1],lw=lw,s=s)
@@ -486,14 +494,7 @@ def plot_by_kstar(fig,ax,df,lw=1,s=1):
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['f_gw']),
         np.log10(df[(df['kstar_1']==12) & (df['kstar_2']==12)]['rh_norm']),
         marker='.',color=colors[5],lw=lw,s=s)
-    ax.scatter(
-        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['f_gw']),
-        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==10)]['rh_norm']),
-        marker='.',color=colors[6],lw=lw,s=s)
-    ax.scatter(
-        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['f_gw']),
-        np.log10(df[(df['kstar_1']==13) & (df['kstar_2']==11)]['rh_norm']),
-        marker='.',color=colors[6],lw=lw,s=s)
+
 
 
     legend_elements = [Line2D([0],[0],color=colors[0],label=f'He-He',marker='o',lw=0),
