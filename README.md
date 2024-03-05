@@ -16,3 +16,4 @@ ipython3 Dumb_Galaxy_Maker.py -- --inifile buildFiles/bulge_Params.ini --final-k
 ```
 
 The first -- passes no arguments to ipython3 so that we can pass the remaining arguments to Dumb_Galaxy_Maker.py's argument parser. The commands are as follows: --inifile tells Dumb_Galaxy_Maker.py what inifile to use, --final-kstar1 and --final-kstar2 tell Dumb_Galaxy_Maker.py which range of kstars to keep, --total_mass tells Dumb_Galaxy_Maker.py how much mass to sample, and -n 4 tells Dumb_Galaxy_Maker.py to use four threads when evolving the systems. I empirically found this to be the fastest choice on the iMacs in the CC computational physics lab–likely anauther choice is better for a different architecture!
+
